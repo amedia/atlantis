@@ -311,7 +311,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		}
 	}
 
-	underlyingRouter := mux.NewRouter()
+    var underlyingRouter *mux.Router
+    if parsedURL.Path == "" {
+	    underlyingRouter = mux.NewRouter()
+    } else {
+	    underlyingRouter = mux.NewRouter().PathPrefix(parsedURL.Path).Subrouter()
+    }
 	router := &Router{
 		AtlantisURL:               parsedURL,
 		LockViewRouteIDQueryParam: LockViewRouteIDQueryParam,
@@ -498,7 +503,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 // Start creates the routes and starts serving traffic.
 func (s *Server) Start() error {
 	s.Router.HandleFunc("/", s.Index).Methods("GET").MatcherFunc(func(r *http.Request, rm *mux.RouteMatch) bool {
-		return r.URL.Path == "/" || r.URL.Path == "/index.html"
+		return r.URL.Path == s.AtlantisURL.Path + "/" || r.URL.Path == "/index.html"
 	})
 	s.Router.HandleFunc("/healthz", s.Healthz).Methods("GET")
 	s.Router.HandleFunc("/status", s.StatusController.Get).Methods("GET")
